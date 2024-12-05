@@ -29,4 +29,46 @@ create user 'rosa2'@'%' identified by 'rosa2';
 -- biblioteca
 grant all
 	on biblioteca.*
-    to rosa2@;
+    to 'rosa2'@'%';
+    
+-- Borrar usuarios rosa y rosa2
+drop user 'rosa'@'localhost';
+drop user 'rosa2'@'%';
+
+-- Añadir campo teléfono a la tabla personas de 
+-- la bd ies
+use ies;
+alter table personas add telefono varchar(9) null;
+
+select * from personas;
+
+-- Añadir un teléfono (aleatorio) a cada persona
+update personas set telefono = rand()*1000000000;
+
+-- Crear un usuario director que puede hacer
+-- cualquier operación sobre la bd ies
+-- Además puede conceder permisos a otros usuarios
+create user 'director'@'%' identified by 'director';
+grant ALL
+	on ies.*
+    to 'director'@'%';
+-- mostrar privilegios del director
+show grants for 'director'@'%';
+-- Me he equivocado y con este privilegio
+-- no puede dar privilegios a otros usuarios
+-- Quitar y volver a dar de forma correcta
+revoke ALL on ies.* from 'director'@'%';    
+-- mostrar privilegios del director
+show grants for 'director'@'%';
+grant ALL
+	on ies.*
+    to 'director'@'%'
+    with grant option;
+show grants for 'director'@'%';    
+-- Crear un usuario admin que puede hacer
+-- select, insert, udate y delete sobre personas
+
+-- Crear un usuario profesor que solamente puede
+-- consultar el nombre y el telefono de las personas
+
+    
