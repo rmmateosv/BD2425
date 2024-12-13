@@ -65,8 +65,13 @@ grant ALL
     to 'director'@'%'
     with grant option;
 show grants for 'director'@'%';    
--- Crear un usuario admin que puede hacer
+-- Crear un usuario secretario que puede hacer
 -- select, insert, udate y delete sobre personas
+create user 'secretario'@'%' identified by 'secretario';
+grant select, insert, update, delete
+	on ies.personas
+    to 'secretario'@'%';
+show grants for 'secretario'@'%';
 
 -- Crear un usuario profesor que solamente puede
 -- consultar el nombre y el telefono de las personas
