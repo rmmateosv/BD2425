@@ -106,3 +106,23 @@ select * from serieMenores;
  -- usuario: Simple y no único
  -- capítulo: Simple y no único
  
+ -- 11
+ create user 'ceo'@'%' identified by 'ceo';
+ grant all on *.* to 'ceo'@'%';
+ 
+create user 'gestion'@'localhost' identified by 'gestion';
+grant select, insert, update, delete on hba.* to 'gestion'@'localhost';
+
+create user 'usuario'@'localhost' identified by 'usuario';
+grant select on hba.series to 'usuario'@'localhost';
+grant select on hba.capitulos to 'usuario'@'localhost';
+grant select on hba.reproducciones to 'usuario'@'localhost';
+
+-- Hay que quitar el permiso que tiene
+revoke all on *.* from 'ceo'@'%';
+ -- Dar el permiso de nuevo
+grant all on hba.* to 'ceo'@'%';
+
+drop user 'usuario'@'localhost';
+drop user 'gestion'@'localhost';
+drop user 'ceo'@'%';
