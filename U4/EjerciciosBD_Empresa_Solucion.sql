@@ -146,3 +146,60 @@ select distinct e.NumEmp
 	from empleados e join pedidos p
 		on e.numemp = p.Representante
 	where p.importe > 60 or e.cuota < 60;        
+    
+-- 22
+select avg(cuota) as CuotaMedia, avg(ventas) as VentasMedias
+	from empleados;
+-- 23
+select avg(importe) as ImporteMedio,
+	sum(importe) as ImporteTotal,
+    avg(importe/cantidad) as PrecioMedio
+	from pedidos;
+-- 24
+select avg(precio) as PrecioMedio
+	from productos
+	where idfab = 'aci';
+-- 25    
+select sum(importe) as ImporteTotal
+	from pedidos as p join empleados as e
+		on p.representante = e.numemp
+	where e.nombre = 'Vicente Pantalla';
+-- 26
+select min(fechapedido)
+	from pedidos;
+-- 27
+select count(*) as NumPedidos
+	from pedidos
+    where importe >150;
+-- 28
+select oficina, count(*) as CantidaEmpleados
+	from empleados
+    group by oficina;
+-- 29
+select e.numemp, e.nombre, sum(p.importe),
+       p.cliente
+	from empleados as e join
+		pedidos as p on p.Representante = e.NumEmp
+	group by e.NumEmp, p.cliente;
+-- 30
+select representante, avg(importe)
+	from pedidos
+    group by representante
+    having sum(importe)>180;
+-- 31
+select descripcion, precio, existencias, sum(cantidad) as cantidadTotal
+	from productos join pedidos
+		on IdProducto=producto and idfab=fabricante
+	group by idfab,IdProducto
+    having cantidadTotal > existencias * 0.75
+    order by cantidadTotal;
+
+-- 32
+
+
+
+
+
+
+
+    
