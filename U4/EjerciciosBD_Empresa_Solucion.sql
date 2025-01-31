@@ -195,7 +195,9 @@ select descripcion, precio, existencias, sum(cantidad) as cantidadTotal
     order by cantidadTotal;
 
 -- 32
-
+select count(distinct oficina)
+	from empleados
+    where ventas>cuota;
 
 
 
