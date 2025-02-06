@@ -101,4 +101,7 @@ select name, count(*) numLen
     having numlen = 1
 	order by numLen;
 -- s
-    
+select co.name
+	from country co join unesco u on code = countrycode
+    group by co.code
+    having min(year)>=2000;
