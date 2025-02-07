@@ -1,4 +1,4 @@
--- 1
+-- a
 -- Vamos a hacer un select que saque la poblacion de cada continente
 select(select sum(population) from country
 	where continent='europe') Poblacion_Europa,
@@ -10,7 +10,7 @@ select(select sum(population) from country
 		where continent='north america' or continent='south america')Poblacion_America,
  (select sum(population) from country
 	where continent='oceania') Poblacion_Oceania;
-    -- 2
+-- b
     -- paso 1:¿cuantas lenguas oficiales tiene España?
     select count(*) as oficiales
     from countrylanguage
@@ -77,7 +77,128 @@ select min(year), co.name
 							from unesco);
 -- e)
 -- Paso 1: Saber el año mas reciente en el que se ha independizado un pais
+select max(Indepyear) from country 
+	where continent = 'Europe';
+    
+-- Paso 2: Mostrar los paises cuyo año de idependencia sea
+-- igual al resultado de la consulta del paso 1
 
+select name from country 
+	where continent = 'Europe' 
+		and Indepyear = (select max(Indepyear) 
+							from country 
+							where continent = 'Europe');
+-- f
+-- Paso 1 
+-- Averiguar la población más baja de un país
+select min(population)
+	from country;
+    
+select name 
+	from country
+    where population = (select min(population)
+	from country);
+    
+-- g 
+-- Paso 1: Calcular cual es la media de la población 
+-- de los paises de europa
+select avg(population) from country 
+	 where continent = 'Europe';
+     
+-- Paso 2: que paises europeos tienen mas poblacion 
+-- del valor devuelto en el paso 1
+select name from country 
+	where continent = 'Europe'
+    and population > (select avg(population) from country 
+	 where continent = 'Europe');
+     
+-- h
+-- Paso 1: Calcular la población media de un país concreto
+-- se calcula con la población de las ciudades
+select avg(population)
+	from city
+	where CountryCode = 'ESP';
+-- Paso 2: Mostrar nombre y población de ciudades europeas
+-- cuya población supere el valor obtenido en el paso 1 
+-- poninendo como código de país el código de país de esa ciudad
+select ci.name, ci.population 
+	from city as ci join country on CountryCode = Code
+	where continent = 'Europe' and 
+		ci.population > (select avg(population)
+							from city
+							where CountryCode = ci.CountryCode);
+-- i
+-- forma 1 con mayor que todos
+-- Paso 1:Averiguar la poblacion de los paises africanos
+
+select distinct population
+	from country
+    where continent = 'Africa';
+    
+-- Paso 2:Mostrar el nombre de los paises europeos
+-- cuya poblacion sea mayor que todos los valores obtenidos
+-- en la consulta 1
+
+select name
+	from country
+    where continent = 'Europe'
+    and population > ALL(
+    select distinct population
+		from country
+		where continent = 'Africa');
+        
+-- forma 2 mayor que todos equivale a decir mayor que el valor maximo
+
+select name
+	from country
+    where continent = 'Europe'
+    and population > (
+    select max(population)
+		from country
+		where continent = 'Africa');
+
+-- j
+-- Forma 1
+-- Paso 1: Averiguar esperanza de vida de los países europeos
+select distinct LifeExpectancy
+	from country
+    where continent = 'Europe';
+-- Paso 2: Mostrar el nombre de los países africanos cuya esperanza de vida
+-- sea mayor que la mde alguno de los obtenidos en el paso anterior
+select name
+	from country
+    where continent = 'Africa'
+    and LifeExpectancy > ANY (select distinct LifeExpectancy
+	from country
+    where continent = 'Europe');
+-- Forma 2 mayor que ANY es lo mismo que decir mayor que el minimo
+select name
+	from country
+    where continent = 'Africa'
+    and LifeExpectancy > (select min(LifeExpectancy)
+	from country
+    where continent = 'Europe');
+    
+-- k)
+-- Parte 1: Saber si un país tiene más de 10 lugares patrimonio de la humanidad
+select count(*)
+	from unesco
+	where countryCode = 'BVT'
+	having count(*) > 10;
+
+-- Parte 2: Sacar los nombres de los paises
+select name, code
+	from country
+    where exists (select count(*)
+					from unesco
+                    where countryCode = code
+					having count(*) > 10);
+
+    
+
+
+    
+                            
 
 
 
