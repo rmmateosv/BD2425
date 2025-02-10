@@ -194,8 +194,77 @@ select name, code
                     where countryCode = code
 					having count(*) > 10);
 
-    
+-- L
+-- Parte 1: Saber si un país tiene más de 10 
+-- lugares patrimonio de la humanidad
+select count(*)
+	from unesco
+	where countryCode = 'ESP'
+	having count(*) > 10;
+-- Paso 2
+-- Seleccionar los paises para los que la consulta 
+-- de la parte 1 no devuelva nada.
+select name, code
+	from country
+    where not exists (select count(*)
+					from unesco
+                    where countryCode = code
+					having count(*) > 10);
+-- m
+-- Paso 1
+-- Mostrar las ciudades de más de 1M
+-- de habitantes de un país concreto
+select * from city
+	where CountryCode = 'BVT'
+    and Population > 1000000;
+-- Paso 2
+-- Mostrar los países para los que
+-- la consulta del paso 1 devuelva algo
+select name, code from country
+	where exists (select * from city
+				where CountryCode = code
+				and Population > 1000000);
+                
+-- N
 
+-- Paso 1 Obtener el numero de habitantes 
+-- de la ciudad menos poblada
+-- para cada pais
+
+select min(population)as poblacion ,countrycode
+	from city
+		group by CountryCode;
+
+-- Paso 2
+-- Hacer un join de la tabla paises 
+-- con la subconsulta del paso 1
+-- la clusula on se haria sobre el codigo del pais
+-- se mostraria el nombre el continente y el min poblacion
+
+select name, continent,sc.poblacion
+	from country
+		join (select min(population) poblacion ,countrycode
+				from city
+					group by CountryCode) as sc
+		on code = sc.countrycode;
+
+-- o 
+-- Paso 1 
+-- mostrar para cada pais el ultimo año en el que se 
+-- le ha reconocido un lugar patrimonio de la humanidad
+select countrycode, max(Year) as anio
+from unesco
+Group by countryCode; 
+-- paso 2 hacer un outer join de Country con la tabla obtenida en el paso 1
+ select  name , sc.anio
+ from country left join (select countrycode, max(Year) as anio
+									from unesco
+									Group by countryCode) as sc
+				on code = sc.countrycode
+order by sc.anio desc,name ;
+
+
+    
 
     
                             
