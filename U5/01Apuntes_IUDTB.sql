@@ -102,7 +102,7 @@ update productos
     where id in (6, 7, 8);
 -- 4
 -- Crear dos ventas en dos meses distintos para el producto 
--- 6. El precio no se puede poner a mano, se debe coger de 
+-- 1. El precio no se puede poner a mano, se debe coger de 
 -- la tabla productos
 insert into ventas values
 	(default,6, 3, 
@@ -114,7 +114,46 @@ insert into ventas values
 		subdate(current_timestamp(), interval (rand() * 10) month )
 	);
 
--- 5
+
+
+-- Transacciones
+-- Crear una venta con transacción
+-- Vender 2 unidades del 'Producto 1'
+-- Definir una transacción ya que hay
+-- que hacer dos operaciones, un
+-- insert en venta y un update en producto
+start transaction;
+insert into ventas values (null,
+	(select id from productos where nombre = 'Producto 1' limit 1),
+    2,
+    2 * (select precio 
+			from productos 
+            where nombre = 'Producto 1' limit 1),               
+    curdate());
+update productos set stock = stock - 2
+	where nombre = 'Producto 1';
+-- No hemos equivocado ya que no hemos 
+-- puesto la hora en la venta, solamente
+-- hemos puesto el día
+-- DESHACEMOS LO QUE  HAYAMOS HECHO
+rollback;   
+
+-- Corregimos la fecha para que tenga también la hora
+start transaction;
+insert into ventas values (null,
+	(select id from productos where nombre = 'Producto 1' limit 1),
+    2,
+    2 * (select precio 
+			from productos 
+            where nombre = 'Producto 1' limit 1),               
+    now());
+update productos set stock = stock - 2
+	where nombre = 'Producto 1';
+-- Terminamos la transacción haciendo commit
+-- Porque todo está bien
+commit;
+
+-- ejercicio 5
 -- Crea una tabla llamada descatalogados
 -- La tabla debe almacenar el id del producto,
 -- el nombre y la fecha en la que se crea el registro.
@@ -122,3 +161,78 @@ insert into ventas values
 -- no tengan ventas.
 -- Borra de la tabla productos los productos que 
 -- estén descatalogados
+-- Este ejercicio debería hacerse con una transacción
+-- ya que hay que hacer varios insert (1 por cada producto descatalogado)
+-- y varios deletes (1 por cada producto descatalogado)
+drop table if exists descatalogados;
+create table descatalogados(
+	id int primary key,
+    nombre varchar(50) not null,
+    fecha date not null,
+    foreign key(id) references productos(id) on update cascade
+		on delete restrict
+)engine Innodb;
+
+-- Inicar transacción
+start transaction;
+-- Averiguar los productos que no tiene ventas
+select p.id, p.nombre, curdate()
+	from productos p left join ventas v
+		on p.id = v.producto_id
+	where v.id is null;
+
+-- Rellenar la tabla con los productos descatalogados
+insert into descatalogados
+	select p.id, p.nombre, curdate()
+				from productos p left join ventas v
+					on p.id = v.producto_id
+				where v.id is null;
+select * from descatalogados; 
+-- Borrar productos no vendidos de la tabla productos
+delete from productos
+	where id in (select id from descatalogados);
+-- Nos da fallo de foreign key  ya que
+-- estamos borrando de la tabla productos
+-- y los descatalogados referencias  a  los
+-- ids de los productos que queremos borrar
+-- y hemos creado la FK con la opción
+-- on delete restrict.
+-- Solución, ponemos este delete como cascade
+rollback;  
+
+drop table if exists descatalogados;
+create table descatalogados(
+	id int primary key,
+    nombre varchar(50) not null,
+    fecha date not null,
+    foreign key(id) references productos(id) on update cascade
+		on delete cascade
+)engine Innodb;
+
+-- Inicar transacción
+start transaction;
+-- Averiguar los productos que no tiene ventas
+select p.id, p.nombre, curdate()
+	from productos p left join ventas v
+		on p.id = v.producto_id
+	where v.id is null;
+
+-- Rellenar la tabla con los productos descatalogados
+insert into descatalogados
+	select p.id, p.nombre, curdate()
+				from productos p left join ventas v
+					on p.id = v.producto_id
+				where v.id is null;
+select * from descatalogados; 
+-- Borrar productos no vendidos de la tabla productos
+delete from productos
+	where id in (select id from descatalogados);
+-- Ahora no da error pero al tener cascade
+-- se han borrado los productos de la tabla productos
+-- y también de la tabla descatalogados
+-- ERROR!! No queremos que pase esto
+-- vamos a solucinarlo de otra forma
+rollback;    
+
+-- Nueva solución: En  descatolado el id no es FK
+        
