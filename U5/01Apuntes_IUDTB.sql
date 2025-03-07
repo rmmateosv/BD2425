@@ -234,5 +234,64 @@ delete from productos
 -- vamos a solucinarlo de otra forma
 rollback;    
 
+-- clase del 07/03/2025
 -- Nueva solución: En  descatolado el id no es FK
-        
+drop table if exists descatalogados;
+create table descatalogados(
+	id int primary key,
+    nombre varchar(50) not null,
+    fecha date not null
+)engine Innodb;  
+-- Repitimos la transacción para obtener los productos
+-- que no tienen ventas, pasarlos a la tabla
+-- descatalogados y borrrarlos de productos
+-- Inicar transacción
+start transaction;
+-- Averiguar los productos que no tiene ventas
+select p.id, p.nombre, curdate()
+	from productos p left join ventas v
+		on p.id = v.producto_id
+	where v.id is null;
+
+-- Rellenar la tabla con los productos descatalogados
+insert into descatalogados
+	select p.id, p.nombre, curdate()
+				from productos p left join ventas v
+					on p.id = v.producto_id
+				where v.id is null;
+select * from descatalogados; 
+-- Borrar productos no vendidos de la tabla productos
+delete from productos
+	where id in (select id from descatalogados);     
+-- Terminamos la transacción con commit
+commit;  
+
+select * from productos;  
+select * from descatalogados;
+
+
+-- POLÍTICA BLOQUEOS
+-- Vamos a crear un usuario para porbar los bloqueos
+-- con el usuario root y con el usuario prueba
+create user 'prueba'@'%' identified by 'prueba';
+-- Hacerle administrador sobre ventas
+grant all
+	on ventas.*
+    to 'prueba'@'%'
+    with grant option;
+-- Crear en workbench una conexión para el usuario prueba
+-- y conectarnos
+-- ...   
+--  El usuario prueba hace un insert de un producto
+-- y no hay problema
+-- Volvemos al usuario root y hace un select
+-- que bloquea para actualización y no para lectura
+-- Como tenemos pocos datos, lo hacemos
+-- en una transacción para controlar 
+-- cuando termina
+start transaction;
+select * from productos lock in share mode;
+-- Vamos al usuario prueba y hacemos 
+-- un select => Se puede sin problema
+-- un insert => No va dejar hasta que acabe esta transacción
+commit;
