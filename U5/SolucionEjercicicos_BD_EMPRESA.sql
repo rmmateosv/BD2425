@@ -69,9 +69,9 @@ insert into empleados2
 	select * 
 	from empleados
     where numhi > 0 or 
-		(numhi = 0 and departamento in (select numdepart
+		 departamento in (select numdepart
 											from departamentos
-                                            where length(nombre)>10));
+                                            where length(nombre)>10);
 -- 3
 update empleados2
 	set salario = salario*1.15
@@ -87,4 +87,87 @@ update empleados2
     comision = 1000
     where year(curdate())-year(fecNa) = 
 		2 * (select min(year(curdate())-year(fecNa))
-				from empleados2);
+				from empleados);
+-- No actualiza nada porque la edad del empleado
+-- más joven son 55 años y no hay ningún empleado con 110 años
+select *, year(curdate())-year(fecNa)
+	from empleados2;  
+    
+-- Para comprobar que el update acutaliza
+-- vamos a poner como condición  el doble de la edad
+-- del más joven menos 14 años   
+update empleados2
+	set salario = 6000,
+    comision = 1000
+    where year(curdate())-year(fecNa) = 
+		2 * (select min(year(curdate())-year(fecNa))
+				from empleados) - 14;
+                
+-- 5
+delete from empleados2
+	where departamento in (select numDepart 
+		from departamentos
+        where tipoDir = 'F');
+-- 6
+update empleados2
+	set comision = salario/4,
+    salario = salario - salario/4
+	where comision is null;
+-- 7
+delete from empleados2
+	where departamento in (select numDepart  
+						from departamentos join centros 
+                        on centro = numCentro
+                       where direccion like '%Atocha,%');
+-- 8
+delete from empleados2
+	where departamento in (select numDepart  
+						from departamentos 
+                       where centro is null);
+-- No borra ninguno porque el único departamento sin centro 
+-- es el 130, y no hay ningún empleado en ese departamento
+
+-- 9
+start transaction;
+-- Insertar empleado
+insert into empleados2 values 
+	(default,'Rosa',2,null,3100,20000101,curdate(),350,130); 
+-- Actualizar el presupuesto del departamento
+update departamentos
+	set presupuesto = presupuesto + 
+		(select salario from empleados2 
+			where nombre = 'Rosa' limit 1)
+	where numdepart = (select departamento from empleados2 
+							where nombre = 'Rosa' limit 1);
+commit;   
+
+--  10 
+start transaction;
+update empleados 
+	set departamento = 130
+    where numEmp = 290;
+update departamentos
+	set presupuesto = presupuesto - (select salario 
+										from empleados
+                                        where numEmp = 290)
+	where numDepart = 120;
+update departamentos
+	set presupuesto = presupuesto + (select salario 
+										from empleados
+                                        where numEmp = 290)
+	where numDepart = 130;    
+commit;    
+
+-- 11
+-- Empleado de más antigüedad de un departemento
+select numEmp
+	from empleados
+    where fecIn = (select min(fecIn) 
+							from empleados 
+                            where departamento = 100 );
+update departamentos
+	set director = (select numEmp
+	from empleados
+    where fecIn = (select min(fecIn) 
+							from empleados 
+                            where departamento =  ));
