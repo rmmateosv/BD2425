@@ -165,9 +165,9 @@ select numEmp
     where fecIn = (select min(fecIn) 
 							from empleados 
                             where departamento = 100 );
-update departamentos
+update departamentos d
 	set director = (select numEmp
-	from empleados
-    where fecIn = (select min(fecIn) 
-							from empleados 
-                            where departamento =  ));
+						from empleados
+						where fecIn = (select min(fecIn) 
+												from empleados 
+												where departamento = d.numdepart ));

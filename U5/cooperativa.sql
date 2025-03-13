@@ -27,9 +27,6 @@ CREATE TABLE `compras` (
   `cantidad` int(11) NOT NULL,
   `precio` float NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `fk3` (`socio`),
-  KEY `fk4` (`material`),
-  KEY `ifecha` (`fecha`),
   CONSTRAINT `fk3` FOREIGN KEY (`socio`) REFERENCES `socios` (`numero`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `fk4` FOREIGN KEY (`material`) REFERENCES `materiales` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=latin1;
