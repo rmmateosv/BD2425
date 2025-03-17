@@ -39,13 +39,49 @@ update materiales
 update productos
 	set precio = precio * 1.10
     where nombre like '%fresa%';
-
+-- 10
+update socios
+	set saldo = saldo * 0.95
+    where saldo < 0;
 -- 11
 start transaction;
 delete from compras
-	where material =' M2';
+	where material ='M2';
 delete from materiales
 		where id = 'M2';
-commit;    
+commit; 
+-- 13
+-- Solución 1
+select distinct socio
+	from entregas
+UNION    
+select distinct socio
+	from compras;    
+-- Borrar socios cuyo  numero esté entre los obtenidos en la consulta anterior
+delete from socios
+	where numero not in (select distinct socio
+								from entregas
+								UNION    
+								select distinct socio
+									from compras);
+-- Solución 2
+delete from socios
+	where numero not in (select distinct socio
+								from entregas)
+	  and numero not in (select distinct socio
+									from compras);    
+-- 18
+-- Ids de productos con más de 5 entregas
+select producto
+	from entregas
+    group by producto
+    having count(*) > 5;
+update productos
+		set precio = precio * 1.1
+        where id in (select producto
+						from entregas
+						group by producto
+						having count(*) > 5);
+
     
 
