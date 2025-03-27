@@ -216,7 +216,7 @@ call cuentaAtras3(3)//
 -- Rutina que crea entrega
 drop procedure crearEntrega//
 create procedure crearEntrega(pSocio int,
-	pProducto varchar(10), pKilos int, bultos int)
+	pProducto varchar(10), pKilos int, pBultos int)
 begin
 	declare vNumero int;
     declare vProducto varchar(10);
@@ -249,7 +249,7 @@ begin
     
 	
 end//
-call crearEntrega(1,'F1', 10, 5)//
+call crearEntrega(1,'F2', 10, 5)//
 
 
 
