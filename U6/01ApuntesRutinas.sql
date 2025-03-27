@@ -213,5 +213,45 @@ begin
 end//
 call cuentaAtras3(3)//
 
+-- Rutina que crea entrega
+drop procedure crearEntrega//
+create procedure crearEntrega(pSocio int,
+	pProducto varchar(10), pKilos int, bultos int)
+begin
+	declare vNumero int;
+    declare vProducto varchar(10);
+    declare vPrecio float;
+    
+	-- Chequear socio
+    set vNumero = (select numero
+		from socios
+        where numero = pSocio);
+	if vNumero is null then
+		-- No se ha encontrado el socio
+        signal sqlstate '45000' 
+			set message_text = 'No existe el socio';
+    end if;
+    -- Chequear producto
+    select id, precio
+		into vProducto, vPrecio
+		from productos
+        where id = pProducto;
+	if vProducto is null then
+		signal sqlstate '45000' 
+			set message_text = 'No existe el producto';
+    end if;
+    -- Crear entrega
+    insert into entregas values(default, curdate(),
+		vNumero,pProducto,pKilos,pBultos,
+        pkilos*vPrecio);
+	-- Devolver id de entrega creada
+    select last_insert_id();
+    
+	
+end//
+call crearEntrega(1,'F1', 10, 5)//
+
+
+
 delimiter ;
 
