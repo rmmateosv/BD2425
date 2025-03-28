@@ -251,7 +251,51 @@ begin
 end//
 call crearEntrega(1,'F2', 10, 5)//
 
-
-
+use cooperativa//
+drop procedure if exists actualizaSaldo//
+create procedure actualizaSaldo()
+begin
+	declare vFin boolean default false;
+    declare vNumero int;
+    declare vImporteE, vImporteC float;
+    
+	-- Declarar el cursor
+    declare cSocios cursor for select numero from socios;
+    
+    -- Declarar manejador de error del fetch 1329
+    -- Siempre después del cursor
+    declare continue handler for 1329 
+    begin  
+		set vFin = true;  
+	end;
+    
+    -- Abrir cursor: Ejecuta el select y lo carga
+    --  en cSocios
+    open cSocios;
+    -- Recorrer cursor y actualiar saldo
+    e1:loop
+		-- Recuperar un registro del cursor
+        fetch cSocios into vNumero;
+        -- Cuando vFin se true, salimos del bucle
+        if vFin=true then
+			leave e1;
+		end if;
+        -- Calcular importe entregas
+        set vImporteE = (select ifnull(sum(precio),0)
+							from entregas
+                            where socio = vNumero);
+        -- Calcular importe compras
+        set vImporteC = (select ifnull(sum(precio),0)
+							from compras
+                            where socio = vNumero);
+        -- Actualizar saldo
+        update socios set saldo = vImporteE- vImporteC
+			where numero = vNumero;
+    end loop;
+    -- Cerrar cursor
+    close cSocios;
+    select * from socios;
+end//
+call actualizaSaldo()//
 delimiter ;
 
