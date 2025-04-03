@@ -298,17 +298,55 @@ begin
 end//
 call actualizaSaldo()//
 
-drop procedure atipicas//
+drop procedure if exists atipicas//
 create procedure atipicas(pSocio int)
 begin
-	declare cEntregas cursor for select * 
+	declare vSalir boolean default false;
+    declare vId int;
+    declare vPrecio, precioMedio float;
+    
+    -- Paso 1: Declararlo
+	declare cEntregas cursor for select id, precio 
 									from entregas
                                     where socio = pSocio;
 	declare continue handler for 1329 
 		begin 
 			set vSalir = true;
         end;
+    -- Calcular el precio medio de las entregas del socio
+    set precioMedio = (select avg(precio) from entregas where socio = pSocio);
+    -- Crear la tabla si no existe
+    drop table if exists tmp;
+	create table tmp(
+		id int primary key,
+		precio float,
+		tipo enum ('Atípica','Normal')
+	)engine innodb;
+   -- Paso 2: Abrirlo    
+    open cEntregas; -- Se ejecuta el select y se carga en memoria
+	-- Paso 3: Recorrerlo
+    b1:loop
+		fetch cEntregas into vId, vPrecio;
+        if vSalir then
+			leave b1; -- Salir del bucle etiquetado como b1
+        end if;
+       
+        -- Comprobar si la entrega es atípica o no
+        if vPrecio < precioMedio/100 or vPrecio > precioMedio * 100 then
+			-- Atípica
+            insert into tmp values (vId, vPrecio, 'Atípica');
+        else
+			-- Normal
+            insert into tmp values (vId, vPrecio, 'Normal');
+        end if;
+    end loop;
+    -- Paso 4. cerrarlo
+    close cEntregas;
+    -- Mostrar la tabla temporal
+    select * from tmp;
+    -- Borrar la tabla temporal
+    drop table if exists tmp;
 end//
-
+call atipicas(1)//
 delimiter ;
 
