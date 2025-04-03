@@ -297,5 +297,18 @@ begin
     select * from socios;
 end//
 call actualizaSaldo()//
+
+drop procedure atipicas//
+create procedure atipicas(pSocio int)
+begin
+	declare cEntregas cursor for select * 
+									from entregas
+                                    where socio = pSocio;
+	declare continue handler for 1329 
+		begin 
+			set vSalir = true;
+        end;
+end//
+
 delimiter ;
 
