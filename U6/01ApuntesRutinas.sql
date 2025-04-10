@@ -348,5 +348,59 @@ begin
     drop table if exists tmp;
 end//
 call atipicas(1)//
+
+-- TRIGGERS
+-- Calcular el precio de una compra, chequeando el sado
+drop trigger if exists insertCompra//
+create trigger insertCompra
+	before insert
+    on compras
+    for each row
+begin
+	declare vPrecio float;
+    declare vSaldo int;
+	-- Obtener el precio del material
+    -- que se está comprando
+    select precio 
+		into vPrecio
+		from materiales where id = new.material;
+	-- Rellenar el precio del material en la compra
+    set new.precio = vPrecio;
+    -- Chequear si el socio tiene saldo
+    -- Obtener el saldo del socio
+    set vSaldo = (select saldo 
+					from socios 
+                    where numero = new.socio);
+    if(vSaldo < (new.cantidad*new.precio)) then
+		signal sqlstate '45000' 
+			set message_text = 'Error, socio sin saldo';
+    end if;
+end//
+insert into compras values (default,curdate(),1,'M4',3,34)//
+
+-- Crear un trigger para que el saldo del socio
+-- se actualice automáticamente después de hacer una compra
+drop trigger if exists insertCompra2//
+create trigger insertCompra2
+	after insert
+    on compras
+    for each row
+begin
+	update socios set saldo = saldo - (new.cantidad * new.precio)
+		where numero = new.socio;
+end//    
+
+-- Hacer que cada vez que se borre una compra, se actualice el
+-- saldo del socio,
+drop trigger if exists borrarCompra//
+create trigger borrarCompra
+	after delete
+    on compras
+    for each row
+begin
+	update socios set saldo = saldo + (old.cantidad * old.precio)
+		where numero = old.socio;
+end//   
+delete from compras where id = 10//
 delimiter ;
 
