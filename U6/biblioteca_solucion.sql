@@ -55,6 +55,6 @@ begin
     end if;
 end//
 
-call crearLibro('El Quijote','Cervantes',10)//
+call crearLibro('Terra Alta','Javier Cercas',2)//
 
 delimiter ;
