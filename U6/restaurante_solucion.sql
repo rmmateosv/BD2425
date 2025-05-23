@@ -56,41 +56,6 @@ insert into platos(nombre, precio, alergias) values
         ('Lomo relleno', 18.00, null),
         ('Fruta de temporada', 3.00, null);
 
-insert into comandas(fecha,numMesa,numComensales, pagado) values
-	(curdate(),1,4, true),
-    (curdate(),3,2, true),
-    (curdate(),9,12, true),
-    (adddate(curdate(), interval 1 day),1,4, true),
-    (adddate(curdate(), interval 1 day),2,2, true),
-    (adddate(curdate(), interval 1 day),3,5, true),
-    (adddate(curdate(), interval 2 day),10,8, true),
-    (adddate(curdate(), interval 2 day),9,10, false),
-    (adddate(curdate(), interval 3 day),5,4, true),
-    (adddate(curdate(), interval 3 day),6,4, false);
-insert into detalleComanda values
-	(1,4,3,(select precio from platos where id = 4)),
-    (1,6,2,(select precio from platos where id = 6)),
-    (2,3,1,(select precio from platos where id = 3)),
-    (2,5,1,(select precio from platos where id = 5)),
-    (3,3,1,(select precio from platos where id = 3)),
-    (3,5,2,(select precio from platos where id = 5)),
-    (4,3,2,(select precio from platos where id = 3)),
-    (4,5,3,(select precio from platos where id = 5)),
-    (4,7,3,(select precio from platos where id = 7)),
-    (4,2,3,(select precio from platos where id = 2)),
-    (4,6,2,(select precio from platos where id = 6)),
-    (4,4,2,(select precio from platos where id = 4)),
-    (5,1,2,(select precio from platos where id = 1)),
-    (5,2,1,(select precio from platos where id = 2)),
-    (5,7,1,(select precio from platos where id = 7)),
-    (5,4,1,(select precio from platos where id = 4)),
-    (5,5,1,(select precio from platos where id = 5)),
-    (6,4,1,(select precio from platos where id = 4)),
-    (7,4,1,(select precio from platos where id = 4)),
-    (8,4,1,(select precio from platos where id = 4)),
-    (9,4,1,(select precio from platos where id = 4)),
-    (10,4,1,(select precio from platos where id = 4)),
-    (10,6,1,(select precio from platos where id = 6));
 
 delimiter //
 -- 1
@@ -121,3 +86,65 @@ end//
 
 -- Crear 2 mesas
 call crearMesa(2)//    
+
+-- 2
+drop procedure nuevoPlatoComanda//
+create procedure nuevoPlatoComanda(pMesa int, pPlato int, pCantidad int)
+begin
+	declare vNumero, vPlato, vComanda, vNC int;
+    declare vPrecio float;
+    declare vTexto varchar(100);
+	-- Chequear mesa existe
+    select numero, numPersonas
+		into vNumero, vNC
+		from mesas
+        where numero = pMesa;
+	if vNumero is null then
+		set vTexto = concat_ws(' ' ,'Error, la mesa',pMesa,', no existe');
+		-- Generar error
+        signal sqlstate '45000' 
+			set message_text = vTexto;
+    end if;
+	-- Chequear plato existe
+    select id, precio
+		into vPlato, vPrecio
+		from platos
+		where id = pPlato;
+     if vPlato is null then
+		set vTexto = concat_ws(' ' ,'Error, el plato',pPlato,', no existe');
+		-- Generar error
+        signal sqlstate '45000' 
+			set message_text = vTexto;
+    end if;
+    -- Comprobar si hay una comanda abierta para la mesa
+    select id
+		into vComanda
+		from comandas
+        where numMesa = pMesa and fecha=curdate() and pagado=false limit 1;
+	if vComanda is null then
+		-- Crear comanda
+        insert into comandas values (default, curdate(), pMesa, vNC,false );
+        -- Recuperar el id de la comanda creada
+        set vComanda = last_insert_id();
+    end if;
+    -- Comprobar si ya se existe el plato en detalle comanda
+    set vPlato = null; -- Lo ponemos a null porque la estamos reutilizando
+    -- Y puede dar problemas si ya tiene un valor y no encuentra nada en este select
+    select idPlato
+		into vPlato
+		from detallecomanda
+        where idPlato = pPlato and idComanda = vComanda;
+    if vPlato is null then
+		-- Debo crear un nuevo detalle
+        insert into detallecomanda values (vComanda, pPlato,pCantidad, vPrecio);
+    else
+		-- Debo actualizar la cantidad en detallecomanda para ese plato
+        update detallecomanda set cantidad = cantidad + pCantidad
+			where idPlato = pPlato and idComanda = vComanda;
+    end if;
+    -- Mostrar los platos de la comanda
+    select comandas.*, detallecomanda.* 
+		from detallecomanda join comandas on id=idComanda
+		where idComanda = vComanda;
+end//
+call nuevoPlatoComanda(1,3,2)//
