@@ -88,7 +88,7 @@ end//
 call crearMesa(2)//    
 
 -- 2
-drop procedure nuevoPlatoComanda//
+drop procedure if exists nuevoPlatoComanda//
 create procedure nuevoPlatoComanda(pMesa int, pPlato int, pCantidad int)
 begin
 	declare vNumero, vPlato, vComanda, vNC int;
@@ -147,4 +147,27 @@ begin
 		from detallecomanda join comandas on id=idComanda
 		where idComanda = vComanda;
 end//
-call nuevoPlatoComanda(1,3,2)//
+call nuevoPlatoComanda(2,4,2)//
+
+-- 3
+drop function if exists mesaDisponible//
+create function mesaDisponible(pMesa int)
+	returns boolean deterministic 
+begin
+	declare vNum, vId int;
+    set vNum = (select numero
+		from mesas
+        where numero = pMesa);
+	if vNum is null then 
+		signal sqlstate '45000' set message_text = 'No existe la mesa';
+    end if;
+    -- Comprobar disponibilidad
+     set vId = (select id		
+		from comandas
+        where nummesa = pMesa and fecha = curdate() and pagado = false limit 1);
+	if vId is null then
+		return true;
+    end if;
+	return false;
+end//
+select 	mesaDisponible(5)//
