@@ -171,3 +171,114 @@ begin
 	return false;
 end//
 select 	mesaDisponible(5)//
+-- 4
+-- Crear la tabla log
+drop table if exists log//
+create table log(
+	id int primary key auto_increment,
+    fecha datetime not null,
+    usuario varchar(100) not null,
+    accion varchar(255) not null
+)engine innodb//
+
+-- Crear trigger para creación de comanda
+drop trigger  if exists crearComanda//
+create trigger crearComanda
+	after insert 
+    on comandas
+    for each row
+begin
+	insert into log values 
+		(default,now(),user(),concat_ws(' ','Crea comanda',new.id));
+end//    
+insert into comandas values (default,curdate(),1,5,false)//
+
+-- Añadir plato a comanda
+drop trigger if exists addPlato//
+create trigger addPlato
+	after insert
+    on detallecomanda
+    for each row
+begin
+	insert into log values 
+		(default,now(),user(),
+        concat_ws(' ','Añade plato',new.idplato,
+					'a comanda', new.idComanda));
+end//
+call nuevoPlatoComanda(3,1,2)//
+insert into detallecomanda values 
+	(1,2,4,(select precio from platos where id = 2));
+
+--  Modificar cantidad
+drop trigger if exists modificaCantidad//
+create trigger modificaCantidad
+	after update
+    on detallecomanda
+    for each row
+begin
+	-- Comprobar que se mofica la cantidad
+    if old.cantidad != new.cantidad then
+		insert into log values 
+		(default,now(),user(),
+        concat_ws(' ','Modifica la cantidad del plato',old.idplato,
+					'de la comanda', old.idComanda,
+                    'de',old.cantidad,'a',new.cantidad));
+    end if;
+    
+end//
+call nuevoPlatoComanda(3,1,10)//
+update detallecomanda
+	set cantidad = cantidad + 10
+    where idcomanda = 4 and idplato = 1//
+    
+-- Borrar plato de comanda    
+drop trigger if exists borrarPlato//
+create trigger borrarPlato
+	after delete
+    on detallecomanda
+    for each row
+begin
+	insert into log values 
+		(default,now(),user(),
+        concat_ws(' ','Borra el plato',old.idplato,
+					'de la comanda', old.idComanda));
+end//
+delete from detallecomanda where idplato = 1 and idcomanda = 4;
+-- 5
+drop function if exists importeFacturado//
+create function importeFacturado(pMes int)
+	returns float deterministic
+begin
+	return (select ifnull(sum(cantidad*precioUnidad),0)
+				from comandas join detallecomanda on idcomanda = id
+				where month(fecha) = pMes and pagado=true);
+end//
+
+select importeFacturado(5) as Total//
+
+-- 6
+drop function if exists informeVIP//
+create function informeVIP(pFecha date)
+returns varchar(255) deterministic
+begin
+	-- Declaración variables
+    declare vNumero, vNumPersonas int;
+    declare vNombre varchar(20);
+    declare vFin boolean default false;
+    
+    -- Declaramos el cursor
+    declare cMesas cursor for select numero, nombre, numPersonas from mesas;
+    -- Declaramos el manejador de error
+    declare continue handler for 1329 
+    begin 
+		set vFin = true; 
+	end;
+    -- abrir cursor
+    open cMesas;
+    -- recorrerlo
+    e1:loop
+    end loop;
+    -- cerrralo 
+    close cMesas;
+end//
+
