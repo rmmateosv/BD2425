@@ -265,6 +265,9 @@ begin
     declare vNumero, vNumPersonas int;
     declare vNombre varchar(20);
     declare vFin boolean default false;
+    declare vComen float;
+    declare resultado varchar(255) default '';
+
     
     -- Declaramos el cursor
     declare cMesas cursor for select numero, nombre, numPersonas from mesas;
@@ -277,8 +280,98 @@ begin
     open cMesas;
     -- recorrerlo
     e1:loop
+		fetch cMesas into vNumero, vNombre, vNumPersonas;
+        if vFin = true then
+			leave e1;
+        end if;
+        -- Obtener la ocupación media del día
+        set vComen = (select ifnull(avg(numComensales),0)
+			from comandas
+            where numMesa = vNumero and fecha = pFecha);
+		-- Comprobar que la media es < que el 60% del numero de comensales
+		if vComen < vNumPersonas * 0.6 then
+			set resultado = concat_ws(',',resultado,vNombre);
+        end if;
     end loop;
     -- cerrralo 
     close cMesas;
+    
+    return resultado;
 end//
 
+select informeVIP(curdate())//
+call nuevoPlatoComanda(4,1,10)//
+call nuevoPlatoComanda(5,1,10)//
+call nuevoPlatoComanda(6,1,10)//
+
+drop procedure if exists rentabilidad//
+create procedure rentabilidad()
+begin
+	-- Declaración de variables
+    declare vId, vCantidad, vMas, vMenos int;
+    declare vFin boolean default false;
+    declare vImporte float;
+    declare vNombre, vAler varchar(100);
+    declare vObserv varchar(255) default '';
+    
+	-- 1: Declarar cursor
+    declare cPlatos cursor for select id, nombre, alergias from platos;
+    declare continue handler for 1329 
+    begin
+		set vFin  = true;
+    end;
+    
+    drop table if exists tmp;
+    create table tmp(
+		id int primary key,
+        nombre varchar(50) not null,
+        cantidad int not null,
+        importe float not null,
+        observaciones varchar(255) not null
+    )engine Innodb;
+    -- Saber cuánto se ha vendido del plato más vendido
+	-- Saber cuánto se ha vendido del plato más vendido
+	select max(c), min(c)
+		into vMas, vMenos
+		from (select sum(cantidad) as  c from detallecomanda join comandas on id = idComanda
+									where pagado = true
+									group by idplato) as sc;                       
+    -- 2: Abrirlo
+    open cPlatos;
+    
+    -- 3: recorrer
+    e1:loop
+		fetch cPlatos into vId, vNombre, vAler;
+        if vFin = true then
+			leave e1;
+        end if;
+        -- Calcular el nº de unidades vendidas y total recaudado
+        select ifnull(sum(cantidad),0), ifnull(sum(cantidad*precioUnidad),0) 
+			into vCantidad,vImporte
+			from detallecomanda join comandas on id = idComanda
+            where idPlato = vId and pagado = true;
+		if vCantidad = VMas then
+			set vObserv = concat_ws('-',vObserv, 'Plato más vendido');
+        end if;
+        if vCantidad = VMenos then
+			set vObserv = concat_ws('-',vObserv, 'Plato menos vendido');
+        end if;
+        if vCantidad = 0 then
+			set vObserv = concat_ws('-',vObserv, 'Plato no se ha vendido');
+        end if;
+        if vAler is not null then
+			set vObserv = concat_ws('-',vObserv, 'Alergias',vAler);
+        end if;
+        insert into tmp values (vId,vNombre,vCantidad,vImporte,vObserv);
+        set vObserv = '';
+    end loop;
+    
+    -- 4: cerrar
+    close cPlatos;
+    
+    -- Mostrar tabla
+    select * from tmp;
+    
+    drop table tmp;
+end//
+call rentabilidad()//
