@@ -26,6 +26,7 @@ begin
 end//
 call crearSocio('Ana','ana@gmail.com')//
 
+-- 2
 drop procedure if exists crearLibro//
 create procedure crearLibro(pTitulo varchar(100),
 					pAutor varchar(100), pEjem int)
@@ -57,4 +58,46 @@ end//
 
 call crearLibro('Terra Alta','Javier Cercas',2)//
 
+
+-- 3
+drop function chequearPrestamo//
+create function chequearPrestamo(pLibro int, pSocio int)
+returns int deterministic
+begin
+	declare resultado int default  0;
+	declare vId, vCont int;    
+    
+    -- Comprobar si socio existe y no está sancionado
+    select id
+		into vId
+        from socios
+        where id = pSocio and sancionado = false;
+	if vId is null then
+		-- return -1;
+        set resultado = -1;
+	end if;
+    -- Comprobar que el socio no tiene 2 o más libros prestados
+    select ifnull(count(*),0)
+		into vCont
+        from prestamos
+        where idSocio = pSocio and fechaRealDevolucion is null;
+    if vCont >=2 then
+		-- return -2;
+        set resultado = -2;
+    end if;
+	-- Comprobar si el libro existe y hay ejemplares
+    set vId = null; -- La ponemos a null porque la reutilizamos
+    select id
+		into vId
+        from libros
+        where id = pLibro and numEjemplares > 0;
+	if vId is null then
+		-- return -3;
+        set resultado = -3;
+	end if;
+    
+    return resultado;
+end//
+
+select chequearPrestamo(0,1)//
 delimiter ;
